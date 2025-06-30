@@ -14,6 +14,7 @@ parser.add_argument("--year", help="path to the file of the training points geop
 parser.add_argument("--working_directory", help="path to the file of the training points geopackage", default= "/data/ahsoka/eocp/forestpulse/01_data/02_processed_data/Synth_Mix/2021_ThermalTime")
 args = parser.parse_args()
 
+
 def extract_points(tile):
     dc_path = os.path.join(args.dc_folder, tile)
     bands = ['BLU', 'GRN', 'RED', 'RE1', 'RE2', 'RE3', 'BNIR', 'NIR', 'SW1', 'SW2']
