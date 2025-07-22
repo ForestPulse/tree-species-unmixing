@@ -41,7 +41,7 @@ parser.add_argument("--dc_folder", help="path to the spline data-cube", default=
 parser.add_argument("--working_directory", help="path to the pure data numpy array", default= "/data/ahsoka/eocp/forestpulse/01_data/02_processed_data/Synth_Mix/2021_ThermalTime_2nd_sampling")
 parser.add_argument("--tree_class_list", help="labels of the tree species/classes in the correct order", default = '[1,2,3,4,5,6,7,8,9,10,11,12,13,14]')
 parser.add_argument("--tree_labels", help="labels of the tree species/classes in the correct order", default = "['Fichte','Kiefer','Tanne','Douglasie','Larche','Buche','Eiche','Ahorn','Birke','Erle','Pappel','OtherDT', 'Ground', 'Shadow']")
-parser.add_argument("--num_models", help="number of models you want to create", default= 5)
+parser.add_argument("--num_models", help="number of models you want to create", default= '5')
 parser.add_argument("--year", help="number of models you want to create", default= '2021')
 args = parser.parse_args()
 
@@ -62,17 +62,11 @@ def get_stack(tile, year):
     stack = np.moveaxis(stack, 0, -1)
     return stack
 
-def predict(tile, year, model_list, no_of_tile, length):
-
-    #@register_keras_serializable(package="Custom")
-    #class SumToOneLayer(tf.keras.layers.Layer):
-    #    def call(self, inputs):
-    #        return inputs / tf.reduce_sum(inputs, axis=-1, keepdims=True)
-    #model_list = []
-    #for i in [0,1,2]:
-    #    model_path = os.path.join(args.working_directory, '3_trained_model_test' ,'version' +str(i+1),'saved_model'+ str(i+1)+ '.keras') 
-    #    model = tf.keras.models.load_model(model_path, custom_objects={'SumToOneLayer': SumToOneLayer} )
-    #    model_list.append(model)
+def predict(tile, year, no_of_tile, length):
+    @register_keras_serializable(package="Custom")
+    class SumToOneLayer(tf.keras.layers.Layer):
+        def call(self, inputs):
+            return inputs / tf.reduce_sum(inputs, axis=-1, keepdims=True)
         
     def pred(model, x):
         y_pred = model(x, training=False)
@@ -143,6 +137,39 @@ def predict(tile, year, model_list, no_of_tile, length):
         band=None
         ds=None
 
+    def predict_model_on_tile(model, x_in, nodata_mask):
+        H, W, T, B = x_in.shape
+        x_flat = x_in.reshape((-1, T, B))  # Shape: (H×W, 28, 10)
+
+        # Optional: Nur gültige Pixel auswählen (spart Zeit)
+        valid_mask = ~nodata_mask.flatten()
+        x_valid = x_flat[valid_mask]
+
+        # Prüfen, ob gültige Pixel vorhanden sind
+        if x_valid.shape[0] == 0:
+            # Keine gültigen Daten, also leere Vorhersage zurückgeben
+            return np.zeros((H, W, model.output_shape[-1]), dtype=np.float32)
+
+        # Mit tf.data schneller
+        ds = tf.data.Dataset.from_tensor_slices(x_valid).batch(1024)
+        preds = model.predict(ds, verbose=0)  # Shape: (valid_samples, N_CLASSES)
+
+        # Rückkonvertieren ins Bildformat
+        y_pred = np.zeros((H * W, preds.shape[-1]), dtype=np.float32)
+        y_pred[valid_mask] = preds
+        y_pred = y_pred.reshape((H, W, -1))  # Shape: (H, W, N_CLASSES)
+        return y_pred
+    
+    # =============================================
+    # load model list
+    # =============================================
+    model_list = []
+    for i in range(int(args.num_models)):
+    #for i in [1]:
+        model_path = os.path.join(args.working_directory, '3_trained_model', 'version' +str(i+1), 'saved_model'+ str(i+1)+ '.keras') 
+        model = tf.keras.models.load_model(model_path)
+        model_list.append(model)
+
     # =============================================
     # define input (if present) and output
     # =============================================
@@ -155,7 +182,7 @@ def predict(tile, year, model_list, no_of_tile, length):
         os.makedirs(out_dir)
     
     # start processing here
-    print('Predicting', tile, year, '...', str(no_of_tile+1) , '/{number} ----------'.format(number=length-1),sep = ' ')
+    print('Predicting', tile, year, '...', str(no_of_tile+1) , '/{number} ----------'.format(number=length),sep = ' ')
     start=datetime.now()
 
     x_in = get_stack(tile, year)
@@ -171,16 +198,19 @@ def predict(tile, year, model_list, no_of_tile, length):
     list_predictions =[]
     model_num = 0 
     for model in model_list:
-        model_num =  model_num + 1
-        for i in range(y_out.shape[1]):
-            x_batch = x_in[i, ...]
-            y_out[i, ...] = pred(model, x_batch)
-        y_out = y_out * 100
-        y_out[y_out < 0.] = 0.
-        y_out[y_out > 100.] = 100.
+        y_out = predict_model_on_tile(model, x_in, nodata_mask)
+        y_out = np.clip(y_out * 100, 0, 100)
         list_predictions.append(np.copy(y_out))
-        single = y_out
-        single[nodata_mask] = 255
+        #model_num =  model_num + 1
+        #for i in range(y_out.shape[1]):
+        #    x_batch = x_in[i, ...]
+        #    y_out[i, ...] = pred(model, x_batch)
+        #y_out = y_out * 100
+        #y_out[y_out < 0.] = 0.
+        #y_out[y_out > 100.] = 100.
+        #list_predictions.append(np.copy(y_out))
+        #single = y_out
+        #single[nodata_mask] = 255
     stacked_arrays = np.stack(list_predictions, axis=-1)
     # median fraction and deviation
     #average_array = np.mean(stacked_arrays, axis=-1)
@@ -206,23 +236,24 @@ def predict(tile, year, model_list, no_of_tile, length):
     #toRasterDeviation(deviation, name_list)
     
     toRasterClassification(y_out_clf)
-    print('-------- Predicting ' + tile + ' done successfully  | ' + str(no_of_tile) + '/{number} | Duration: '.format(number=length-1) + str(datetime.now()-start) + ' ----------')
+    print('-------- Predicting ' + tile + ' done successfully  | ' + str(no_of_tile+1) + '/{number} | Duration: '.format(number=length) + str(datetime.now()-start) + ' ----------')
 
 if __name__ == '__main__':
-    
-    model_list = []
-    for i in range(args.num_models):
-    #for i in [0,1,2]:
-        model_path = os.path.join(args.working_directory, '3_trained_model' ,'version' +str(i+1),'saved_model'+ str(i+1)+ '.keras') 
-        model = tf.keras.models.load_model(model_path, custom_objects={'SumToOneLayer': SumToOneLayer} )
-        model_list.append(model)
+    if not os.path.exists(os.path.join(args.working_directory, '4_prediction')):
+        os.makedirs(os.path.join(args.working_directory, '4_prediction'))
 
-    list_tiles = os.listdir(args.dc_folder)
-    list_tiles = ["X0054_Y0052", "X0054_Y0053", "X0054_Y0054", 
-                  "X0055_Y0052", "X0055_Y0053", "X0055_Y0054",
-                  "X0056_Y0052", "X0056_Y0053", "X0056_Y0054"]
+    list_tiles = []
+    for folder in os.listdir(args.dc_folder):
+        if str(folder).startswith('X00'):
+            list_tiles.append(str(folder))
+    list_predicted =[]
+    for folder in os.listdir(os.path.join(args.working_directory, '4_prediction')):
+        if str(folder).startswith('X00'):
+            list_predicted.append(str(folder))
+
+    list_tiles = list(set(list_tiles) - set(list_predicted))
     year = int(args.year)
     #for tile in list_tiles:
     #    predict(tile, '2021', model_list, list_tiles.index(tile), len(list_tiles))
-    #with parallel_backend('threading'):
-    #    Parallel(n_jobs=2)(delayed(predict)(tile, '2021', model_list, list_tiles.index(tile), len(list_tiles)) for tile in list_tiles)
+    Parallel(n_jobs=10, backend="loky")(delayed(predict)(
+        tile, '2021', list_tiles.index(tile), len(list_tiles)) for tile in list_tiles)
