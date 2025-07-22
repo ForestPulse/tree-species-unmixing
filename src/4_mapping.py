@@ -271,10 +271,11 @@ if __name__ == '__main__':
             list_tiles.append(str(folder))
     list_predicted =[]
     for folder in os.listdir(os.path.join(args.working_directory, '4_prediction')):
-        if str(folder).startswith('X00'):
+        if (str(folder).startswith('X00')) & (os.path.isfile(os.path.join(args.working_directory, '4_prediction' ,folder, 'fraction_' + str(args.year) + '.tif'))):
             list_predicted.append(str(folder))
-
+    
     list_tiles = list(set(list_tiles) - set(list_predicted))
+    print(list_tiles)
     year = int(args.year)
     #for tile in list_tiles:
     #    predict(tile, '2021', model_list, list_tiles.index(tile), len(list_tiles))

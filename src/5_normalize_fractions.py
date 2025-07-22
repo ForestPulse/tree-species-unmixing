@@ -64,7 +64,7 @@ args = parser.parse_args()
 
 
 def normalize_bands(tile):
-    input_path = os.path.join(args.working_directory, '4_prediction', tile,'fraction_{year}.tif'.format(year = params['YEAR']))
+    input_path = os.path.join(args.working_directory, '4_prediction', tile,'fraction_{year}.tif'.format(year = int(args.year)))
     #input_path = os.path.join(params['INPUT_FRACTION_DIR'], tile,'prediction_{year}_model1.tif'.format(year = params['YEAR']))
     output_path = os.path.join(args.working_directory, '5_prediction_normalized', tile)
     if not os.path.exists(output_path):
@@ -103,7 +103,7 @@ def normalize_bands(tile):
     new_dataset.SetProjection(dataset.GetProjection())
 
     # load forest mask
-    mask_path = os.path.join(args.forest_mask_folder, tile ,args.forest_name ) 
+    mask_path = os.path.join(args.forest_mask_folder, tile ,args.forest_mask_name ) 
     with rasterio.open(mask_path) as mask_src:
         mask = mask_src.read(1)
         # 0 = no forest; 1 = forest
@@ -165,10 +165,10 @@ if __name__ == "__main__":
         os.makedirs(os.path.join(args.working_directory, '5_prediction_normalized')  )
     tiles_normalized =[]
     for folder in os.listdir(os.path.join(args.working_directory, '5_prediction_normalized') ):
-        if str(folder).startswith('X00'):
+        if str(folder).startswith('X00') and os.path.isfile(os.path.join(args.working_directory, '5_prediction_normalized', folder, '2_tree_fraction_norm_clip.tif')):
             tiles_normalized.append(str(folder))
 
-    #tiles = list(set(tiles) - set(tiles_normalized))
+    tiles = list(set(tiles) - set(tiles_normalized))
 
     Parallel(n_jobs=10)(delayed(normalize_bands)(tile) for tile in tiles)
     print('Done')
