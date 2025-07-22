@@ -51,12 +51,27 @@ class SumToOneLayer(tf.keras.layers.Layer):
         return inputs / tf.reduce_sum(inputs, axis=-1, keepdims=True)
     
 def get_stack(tile, year):
-    def get_band(band_name):
-        band_path = os.path.join(args.dc_folder, tile, 'stack_{band_name}.vrt'.format(band_name=band_name))
-        with rasterio.open(band_path) as src:
-            band = src.read()
-        band = np.moveaxis(band, 0, -1)
-        return band
+    def get_band(band_name):# get all time-steps for one sentinel-2 band
+        # get all paths for every date
+        band_paths =[]
+        for datei in os.listdir(os.path.join(args.dc_folder,tile)):
+            if ('_'+band_name+'_' in datei) and datei.endswith('.tif'):
+                path = os.path.join(args.dc_folder,tile, datei)
+                band_paths.append(path)   
+        band_paths = sorted(band_paths)
+        # load all dates for the called band
+        list_of_dates = []
+        for band_date in band_paths:
+            with rasterio.open(band_date) as src:
+                date = src.read()
+            date = np.moveaxis(date, 0, -1)
+            list_of_dates.append(date) 
+        # and convert it to the right numpy array shape
+        list_of_dates = np.array(list_of_dates)
+        list_of_dates = np.squeeze(list_of_dates, axis=-1)
+        list_of_dates = np.moveaxis(list_of_dates, 0, -1)
+        return list_of_dates
+    
     band_list = ['BLU', 'GRN', 'RED', 'RE1', 'RE2', 'RE3', 'BNIR', 'NIR', 'SW1', 'SW2']
     stack = np.array([get_band(b) for b in band_list])
     stack = np.moveaxis(stack, 0, -1)
@@ -75,7 +90,9 @@ def predict(tile, year, no_of_tile, length):
         a_out = a/10000.
         return a_out
     def toRasterFraction(arr_in, name_list):
-        path = os.path.join(args.dc_folder, tile, 'stack_BLU.vrt')
+        y1 = int(args.year)-2
+        y2 = int(args.year)
+        path = os.path.join(args.dc_folder, tile, '{y1}-{y2}_001-365_HL_UDF_SEN2L_RSP_BLU_010.tif'.format(y1=y1, y2=y2))
         ds = gdal.Open(path)
         band = ds.GetRasterBand(1)
         arr = band.ReadAsArray()
@@ -98,7 +115,9 @@ def predict(tile, year, no_of_tile, length):
         ds=None
 
     def toRasterDeviation(arr_in, name_list):
-        path = os.path.join(args.dc_folder, tile, 'stack_BLU.vrt')
+        y1 = int(args.year)-2
+        y2 = int(args.year)
+        path = os.path.join(args.dc_folder, tile, '{y1}-{y2}_001-365_HL_UDF_SEN2L_RSP_BLU_010.tif'.format(y1=y1, y2=y2))
         ds = gdal.Open(path)
         band = ds.GetRasterBand(1)
         arr = band.ReadAsArray()
@@ -120,7 +139,9 @@ def predict(tile, year, no_of_tile, length):
         ds=None
 
     def toRasterClassification(arr_in):
-        path = os.path.join(args.dc_folder, tile, 'stack_BLU.vrt')
+        y1 = int(args.year)-2
+        y2 = int(args.year)
+        path = os.path.join(args.dc_folder, tile, '{y1}-{y2}_001-365_HL_UDF_SEN2L_RSP_BLU_010.tif'.format(y1=y1, y2=y2))
         ds = gdal.Open(path)
         band = ds.GetRasterBand(1)
         arr = band.ReadAsArray()
@@ -173,7 +194,9 @@ def predict(tile, year, no_of_tile, length):
     # =============================================
     # define input (if present) and output
     # =============================================
-    blue_band = os.path.join(args.dc_folder, tile, 'stack_BLU.vrt')
+    y1 = int(args.year)-2
+    y2 = int(args.year)
+    blue_band = os.path.join(args.dc_folder, tile, '{y1}-{y2}_001-365_HL_UDF_SEN2L_RSP_BLU_010.tif'.format(y1=y1, y2=y2) )
     if not os.path.isfile(blue_band):
         print('Not tile, skipping!')
         return
