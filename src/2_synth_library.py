@@ -4,9 +4,10 @@ from tqdm import tqdm
 import os
 import argparse
 import ast
+import pandas as pd
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--working_directory", help="path to the pure data numpy array", default= "/data/ahsoka/eocp/forestpulse/01_data/02_processed_data/Synth_Mix/2021_ThermalTime")
+parser.add_argument("--working_directory", help="path to the pure data numpy array", default= "/data/ahsoka/eocp/forestpulse/01_data/02_processed_data/Synth_Mix/2021_ThermalTime_2nd_sampling")
 parser.add_argument("--year", help="year of synthetic mixture", default= 2021)
 parser.add_argument("--num_libs", help="number of synthtic libraries to create", default= 10)
 parser.add_argument("--lib_size", help="number of synthtic libraries to create", default= 256000)
@@ -34,7 +35,12 @@ def mixing(year,model_number):
     x_pure = make_array(os.path.join(args.working_directory, '1_pure' , f'samples_x{str(args.year)}'))
     x_pure = x_pure.astype(np.float32)
     print(x_pure.shape)
-    y_pure = make_array(os.path.join(args.working_directory, '1_pure' , f'samples_y{str(args.year)}'))
+    y_pure = make_array(os.path.join(args.working_directory, '1_pure' , f'samples_y{str(args.year)}')),
+
+    # check about nodata values / negative values
+    mask = np.any(x_pure < 0, axis=(1, 2))
+    x_pure = x_pure[~mask]
+    y_pure = y_pure[0][~mask]
 
     training_sample = int(args.lib_size)
     x_mixed = []
@@ -42,10 +48,24 @@ def mixing(year,model_number):
     index_list = list(range(len(y_pure)))
     lc_index = ast.literal_eval(args.tree_index)
     for _ in tqdm(range(training_sample)):
+    #for _ in tqdm(range(10)):
         k = random.choices(ast.literal_eval(args.mixture_list), 
                            weights= ast.literal_eval(args.mixture_weights), k=1 )[0]
         fractions = np.random.dirichlet(np.ones(k),size=1)[0]
-        chosen_index = random.sample(index_list, k=k)
+        # old: simple random selection of k samples
+        # chosen_index = random.sample(index_list, k=k)
+
+        # new: random selection of classes followed by selectino of samples within these classes
+        # chose classes randomly
+        chosen_classes = random.sample(lc_index, k=k)
+        selected_indices = []
+        # select index for each class
+        for cls in chosen_classes:
+            indices = np.where(y_pure == cls)[0]
+            selected_idx = np.random.choice(indices)
+            selected_indices.append(selected_idx)
+        chosen_index = selected_indices
+        
         x = 0
         y = np.zeros(len(lc_index))
         for i in range(len(chosen_index)):

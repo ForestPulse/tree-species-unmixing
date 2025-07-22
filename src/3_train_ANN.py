@@ -8,15 +8,15 @@ import argparse
 import ast
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--working_directory", help="path to the pure data numpy array", default= "/data/ahsoka/eocp/forestpulse/01_data/02_processed_data/Synth_Mix/2021_ThermalTime")
-parser.add_argument("--num_models", help="number of models you want to create", default= 5)
+parser.add_argument("--working_directory", help="path to the pure data numpy array", default= "/data/ahsoka/eocp/forestpulse/01_data/02_processed_data/Synth_Mix/2021_ThermalTime_2nd_sampling")
+parser.add_argument("--num_models", help="number of models you want to create", default= 1)
 parser.add_argument("--year", help="year of synthetic mixture", default= '2021')
-parser.add_argument("--tree_labels", help="labels of the tree species/classes in the correct order", default = "['Fichte','Kiefer','Tanne','Douglasie','Larche','Buche','Eiche','Ahorn','Birke','Erle','Pappel','Weide', 'Ground', 'Shadow']")
+parser.add_argument("--tree_labels", help="labels of the tree species/classes in the correct order", default = "['Fichte','Kiefer','Tanne','Douglasie','Larche','Buche','Eiche','Ahorn','Birke','Erle','Pappel','OtherDT', 'Ground', 'Shadow']")
 parser.add_argument("--num_hidden_layer", help="number of hidden layer", default= 5)
 parser.add_argument("--hidden_layer_nodes", help="number of nodes per hidden layer", default = 128)
 parser.add_argument("--learning_rate", help="learning_rate for training", default = 1e-3)
 parser.add_argument("--batch_size", help="the batch size for training", default = 256)
-parser.add_argument("--epochs", help="number of epochs", default = 5)
+parser.add_argument("--epochs", help="number of epochs", default = 250)
 args = parser.parse_args()
 
 #------------------------------ added --------------------------------

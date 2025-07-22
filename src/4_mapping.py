@@ -38,9 +38,9 @@ from joblib import Parallel, parallel_backend, delayed
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--dc_folder", help="path to the spline data-cube", default= "/data/ahsoka/eocp/forestpulse/01_data/02_processed_data/ThermalTime_Spline" )
-parser.add_argument("--working_directory", help="path to the pure data numpy array", default= "/data/ahsoka/eocp/forestpulse/01_data/02_processed_data/Synth_Mix/2021_ThermalTime")
+parser.add_argument("--working_directory", help="path to the pure data numpy array", default= "/data/ahsoka/eocp/forestpulse/01_data/02_processed_data/Synth_Mix/2021_ThermalTime_2nd_sampling")
 parser.add_argument("--tree_class_list", help="labels of the tree species/classes in the correct order", default = '[1,2,3,4,5,6,7,8,9,10,11,12,13,14]')
-parser.add_argument("--tree_labels", help="labels of the tree species/classes in the correct order", default = "['Fichte','Kiefer','Tanne','Douglasie','Larche','Buche','Eiche','Ahorn','Birke','Erle','Pappel','Weide', 'Ground', 'Shadow']")
+parser.add_argument("--tree_labels", help="labels of the tree species/classes in the correct order", default = "['Fichte','Kiefer','Tanne','Douglasie','Larche','Buche','Eiche','Ahorn','Birke','Erle','Pappel','OtherDT', 'Ground', 'Shadow']")
 parser.add_argument("--num_models", help="number of models you want to create", default= 5)
 parser.add_argument("--year", help="number of models you want to create", default= '2021')
 args = parser.parse_args()
@@ -218,8 +218,11 @@ if __name__ == '__main__':
         model_list.append(model)
 
     list_tiles = os.listdir(args.dc_folder)
+    list_tiles = ["X0054_Y0052", "X0054_Y0053", "X0054_Y0054", 
+                  "X0055_Y0052", "X0055_Y0053", "X0055_Y0054",
+                  "X0056_Y0052", "X0056_Y0053", "X0056_Y0054"]
     year = int(args.year)
-    for tile in list_tiles:
-        predict(tile, '2021', model_list, list_tiles.index(tile), len(list_tiles))
+    #for tile in list_tiles:
+    #    predict(tile, '2021', model_list, list_tiles.index(tile), len(list_tiles))
     #with parallel_backend('threading'):
     #    Parallel(n_jobs=2)(delayed(predict)(tile, '2021', model_list, list_tiles.index(tile), len(list_tiles)) for tile in list_tiles)

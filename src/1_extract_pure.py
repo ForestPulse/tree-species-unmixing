@@ -6,12 +6,13 @@ import numpy as np
 from tqdm import tqdm
 import os
 import argparse
+from joblib import Parallel, delayed
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--dc_folder", help="path to the spline data-cube", default= "/data/ahsoka/eocp/forestpulse/INTERNAL/spline/thermal_time_training_points" )
-parser.add_argument("--training_points", help="path to the file of the training points geopackage", default= "/data/ahsoka/eocp/forestpulse/INTERNAL/BWI4/all_trainings_points.gpkg")
+parser.add_argument("--dc_folder", help="path to the spline data-cube", default= "/data/ahsoka/eocp/forestpulse/INTERNAL/BWI4/2nd_sampling/5_thermal_spline_points" )
+parser.add_argument("--training_points", help="path to the file of the training points geopackage", default= "/data/ahsoka/eocp/forestpulse/INTERNAL/BWI4/2nd_sampling/3_GIS_selection/second_sampling_merge.gpkg")
 parser.add_argument("--year", help="path to the file of the training points geopackage", default= '2021')
-parser.add_argument("--working_directory", help="path to the file of the training points geopackage", default= "/data/ahsoka/eocp/forestpulse/01_data/02_processed_data/Synth_Mix/2021_ThermalTime")
+parser.add_argument("--working_directory", help="path to the file of the training points geopackage", default= "/data/ahsoka/eocp/forestpulse/01_data/02_processed_data/Synth_Mix/2021_ThermalTime_2nd_sampling")
 args = parser.parse_args()
 
 
@@ -37,7 +38,7 @@ def extract_points(tile):
     for fid, row in gdf.iterrows():
         # iterate over every data point:
         coords = row.geometry
-        spec = row.spec
+        spec = row.Spec
         point_data = []
         for band in bands:
             # get the raster band
@@ -70,4 +71,8 @@ if __name__ == '__main__':
     if not os.path.exists(os.path.join(args.working_directory, '1_pure', f'samples_y{str(args.year)}')):
         os.makedirs(os.path.join(args.working_directory, '1_pure', f'samples_y{str(args.year)}'))
     tile = 'X0055_Y0053'
-    extract_points(tile)
+    #extract_points(tile)
+
+    ### for not parallelized processing
+    tiles = [tile for tile in os.listdir(args.dc_folder) if tile.startswith("X")]
+    Parallel(n_jobs=15)(delayed(extract_points)(tile) for tile in tqdm(tiles, desc="Processing tiles"))
