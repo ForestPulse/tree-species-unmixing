@@ -38,7 +38,7 @@ from joblib import Parallel, parallel_backend, delayed
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--dc_folder", help="path to the spline data-cube", default= "/data/ahsoka/eocp/forestpulse/01_data/02_processed_data/ThermalTime_Spline" )
-parser.add_argument("--working_directory", help="path to the pure data numpy array", default= "/data/ahsoka/eocp/forestpulse/01_data/02_processed_data/Synth_Mix/2021_ThermalTime_2nd_sampling")
+parser.add_argument("--working_directory", help="path to the pure data numpy array", default= "/data/ahsoka/eocp/forestpulse/01_data/02_processed_data/Synth_Mix/2021_ThermalTime_2nd_sampling3")
 parser.add_argument("--tree_class_list", help="labels of the tree species/classes in the correct order", default = '[1,2,3,4,5,6,7,8,9,10,11,12,13,14]')
 parser.add_argument("--tree_labels", help="labels of the tree species/classes in the correct order", default = "['Fichte','Kiefer','Tanne','Douglasie','Larche','Buche','Eiche','Ahorn','Birke','Erle','Pappel','OtherDT', 'Ground', 'Shadow']")
 parser.add_argument("--num_models", help="number of models you want to create", default= '5')
@@ -269,12 +269,22 @@ if __name__ == '__main__':
     for folder in os.listdir(args.dc_folder):
         if str(folder).startswith('X00'):
             list_tiles.append(str(folder))
+    
+    #with open("/data/ahsoka/eocp/forestpulse/02_scripts/spline/fed_states_tiles/BW_tiles_allY.txt", "r") as f:
+    #    list_tiles = f.read().strip().splitlines()
+    #if list_tiles[0].isdigit():
+    #    list_tiles = list_tiles[1:]
+    #list_tiles = ['X0057_Y0057','X0058_Y0057',
+    #              'X0057_Y0058','X0058_Y0058',
+    #              'X0057_Y0059','X0058_Y0059']
     list_predicted =[]
+
     for folder in os.listdir(os.path.join(args.working_directory, '4_prediction')):
         if (str(folder).startswith('X00')) & (os.path.isfile(os.path.join(args.working_directory, '4_prediction' ,folder, 'fraction_' + str(args.year) + '.tif'))):
             list_predicted.append(str(folder))
     
     list_tiles = list(set(list_tiles) - set(list_predicted))
+    
     print(list_tiles)
     year = int(args.year)
     #for tile in list_tiles:

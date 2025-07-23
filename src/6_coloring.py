@@ -35,7 +35,7 @@ import argparse
 import ast
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--working_directory", help="path to the pure data numpy array", default= "/data/ahsoka/eocp/forestpulse/01_data/02_processed_data/Synth_Mix/2021_ThermalTime_2nd_sampling")
+parser.add_argument("--working_directory", help="path to the pure data numpy array", default= "/data/ahsoka/eocp/forestpulse/01_data/02_processed_data/Synth_Mix/2021_ThermalTime_2nd_sampling2")
 parser.add_argument("--tree_labels", help="labels of the tree species/classes in the correct order", default = "['Fichte','Kiefer','Tanne','Douglasie','Larche','Buche','Eiche','Ahorn','Birke','Erle','Pappel','OtherDT', 'Ground', 'Shadow']")
 
 args = parser.parse_args()
@@ -62,7 +62,7 @@ def color_raster(working_dir, tile, no_of_tile, length_list):
     # Definiere das Ausgabe-GeoTIFF
     output_tiff_path = os.path.join(working_dir, tile , '2_tree_fraction_colored.tif')
 
-    if not os.path.isfile(os.path.join(working_dir, folder,'2_tree_fraction_norm_clip.tif')):
+    if not os.path.isfile(os.path.join(working_dir, tile,'2_tree_fraction_norm_clip.tif')):
         print('folder ' + tile + 'is empty.')
         return
 
@@ -82,7 +82,7 @@ def color_raster(working_dir, tile, no_of_tile, length_list):
         # OtherDT
         #OtherDT_band_indexes = [i+1 for i, desc in enumerate(descriptions) if desc in ['Birch', 'Willow', 'Robinia', 'Poplar']]
         #OtherDT_band_indexes = [i+1 for i, desc in enumerate(descriptions) if desc in ['Birke', 'Weide', 'Pappel']]
-        OtherDT_band_indexes = [i+1 for i, desc in enumerate(descriptions) if desc in ['Pappel', 'Other']]
+        OtherDT_band_indexes = [i+1 for i, desc in enumerate(descriptions) if desc in ['Pappel', 'OtherDT']]
         selected_bands = [src.read(i) for i in OtherDT_band_indexes]
         #print(np.stack(selected_bands, axis =0).shape)
         Other_DT = np.sum(selected_bands, axis=0)  # shape: (height, width)
@@ -116,8 +116,9 @@ def color_raster(working_dir, tile, no_of_tile, length_list):
         saturation = max_values / 100
         #hue_map = {0: 120, 1: 60, 2: 190, 3: 25, 
         #            4: 0, 5: 240, 6: 320, 7: 45, 8: 160}
-        hue_map = {0: 240,  1:0  , 2:280, 3:320    , 4: 45 , 5:120, 6:60 , 7:25 , 8: 210 , 9:180, 10: 160}  
-                #  Fichte, Kiefer, Tanne, Douglasie, Lärche, Buche, Eiche, Ahorn, Birke  , Erle , otherDT
+        hue_map = {0: 240,   1:0  , 2:280 ,   3:320   ,    4: 45  , 5:120 , 6:60  ,    7:25   ,  8: 210  ,   9:180  , 10: 160}  
+                #  Fichte,  Kiefer| Tanne | Douglasie |  Lärche   | Buche | Eiche | Ahorn     |   Birke  | Erle     | otherDT
+                #   blau |    rot | lila  |    pink   | h. orange |  grün | gelb  | d. orange | m.  blau | hellblau | türkis
         hue = np.array([[hue_map[idx] for idx in row] for row in max_indices])
 
         hsv_array = np.stack([hue, saturation, value], axis=0)
@@ -157,4 +158,4 @@ if __name__ == '__main__':
             tiles_to_color.append(str(folder))
     list_tile = tiles_to_color
 
-    Parallel(n_jobs=5)(delayed(color_raster)(working_dir, tile, list_tile.index(tile),len(list_tile)) for tile in list_tile)
+    Parallel(n_jobs=25)(delayed(color_raster)(working_dir, tile, list_tile.index(tile),len(list_tile)) for tile in list_tile)

@@ -10,9 +10,9 @@ from joblib import Parallel, delayed
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--dc_folder", help="path to the spline data-cube", default= "/data/ahsoka/eocp/forestpulse/INTERNAL/BWI4/2nd_sampling/5_thermal_spline_points" )
-parser.add_argument("--training_points", help="path to the file of the training points geopackage", default= "/data/ahsoka/eocp/forestpulse/INTERNAL/BWI4/2nd_sampling/3_GIS_selection/second_sampling_merge.gpkg")
+parser.add_argument("--training_points", help="path to the file of the training points geopackage", default= "/data/ahsoka/eocp/forestpulse/INTERNAL/BWI4/2nd_sampling/3_GIS_selection/second_sampling_merge2.gpkg")
 parser.add_argument("--year", help="path to the file of the training points geopackage", default= '2021')
-parser.add_argument("--working_directory", help="path to the file of the training points geopackage", default= "/data/ahsoka/eocp/forestpulse/01_data/02_processed_data/Synth_Mix/2021_ThermalTime_2nd_sampling")
+parser.add_argument("--working_directory", help="path to the file of the training points geopackage", default= "/data/ahsoka/eocp/forestpulse/01_data/02_processed_data/Synth_Mix/2021_ThermalTime_2nd_sampling2")
 args = parser.parse_args()
 
 

@@ -44,7 +44,7 @@ import argparse
 import ast
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--working_directory", help="path to the pure data numpy array", default= "/data/ahsoka/eocp/forestpulse/01_data/02_processed_data/Synth_Mix/2021_ThermalTime_2nd_sampling")
+parser.add_argument("--working_directory", help="path to the pure data numpy array", default= "/data/ahsoka/eocp/forestpulse/01_data/02_processed_data/Synth_Mix/2021_ThermalTime_2nd_sampling2")
 parser.add_argument("--noisy_th", help="threshold for noisy prediction value", default= "20")
 parser.add_argument("--use_shadow_th", help="should a special shadow threshold be used?", default= "F")
 parser.add_argument("--shadow_th", help="threshold for shadow prediction value", default= "30")
@@ -170,5 +170,5 @@ if __name__ == "__main__":
 
     tiles = list(set(tiles) - set(tiles_normalized))
 
-    Parallel(n_jobs=10)(delayed(normalize_bands)(tile) for tile in tiles)
+    Parallel(n_jobs=20)(delayed(normalize_bands)(tile) for tile in tiles)
     print('Done')

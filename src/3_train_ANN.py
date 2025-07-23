@@ -8,7 +8,7 @@ import argparse
 import ast
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--working_directory", help="path to the pure data numpy array", default= "/data/ahsoka/eocp/forestpulse/01_data/02_processed_data/Synth_Mix/2021_ThermalTime_2nd_sampling")
+parser.add_argument("--working_directory", help="path to the pure data numpy array", default= "/data/ahsoka/eocp/forestpulse/01_data/02_processed_data/Synth_Mix/2021_ThermalTime_2nd_sampling3")
 parser.add_argument("--num_models", help="number of models you want to create", default= 1)
 parser.add_argument("--year", help="year of synthetic mixture", default= '2021')
 parser.add_argument("--tree_labels", help="labels of the tree species/classes in the correct order", default = "['Fichte','Kiefer','Tanne','Douglasie','Larche','Buche','Eiche','Ahorn','Birke','Erle','Pappel','OtherDT', 'Ground', 'Shadow']")
@@ -120,4 +120,4 @@ def train(model_number):
 
 if __name__ == '__main__':
     for i in range(int(args.num_models)):
-        train(i+1)
+        train(i+5)
