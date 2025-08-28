@@ -91,8 +91,8 @@ def mixing(year,model_number):
     x_mixed_out_path = os.path.join(args.working_directory, '2_mixed_data','version' +str(model_number), 'x_mixed_' + str(year) + '.npy')
     y_mixed_out_path = os.path.join(args.working_directory, '2_mixed_data','version' +str(model_number), 'y_mixed_' + str(year) + '.npy')
     print(x_mixed_out_path)
-    #np.save(x_mixed_out_path, arr=x_mixed)
-    #np.save(y_mixed_out_path, arr=y_mixed)
+    np.save(x_mixed_out_path, arr=x_mixed)
+    np.save(y_mixed_out_path, arr=y_mixed)
 
 if __name__ == '__main__':
     for i in range(int(args.num_libs)):
