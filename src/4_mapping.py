@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # for paralellization 
 OPENBLAS_NUM_THREADS=1
 MKL_NUM_THREADS=1

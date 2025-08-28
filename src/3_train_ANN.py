@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import tensorflow as tf
 from keras.saving import register_keras_serializable
 import numpy as np

@@ -1,4 +1,5 @@
-#! /home/ahsoka/klehr/anaconda3/envs/Synth_Mix/bin python3
+#!/usr/bin/env python
+
 import geopandas as gpd
 import rasterio
 from rasterio.windows import Window
