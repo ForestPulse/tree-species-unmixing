@@ -44,7 +44,7 @@ import argparse
 import ast
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--working_directory", help="path to the pure data numpy array", default= "/data/ahsoka/eocp/forestpulse/01_data/02_processed_data/Synth_Mix/2021_ThermalTime_2nd_sampling2")
+parser.add_argument("--working_directory", help="path to the pure data numpy array", default= "/data/ahsoka/eocp/forestpulse/01_data/02_processed_data/Synth_Mix/2022")
 parser.add_argument("--noisy_th", help="threshold for noisy prediction value", default= "20")
 parser.add_argument("--use_shadow_th", help="should a special shadow threshold be used?", default= "F")
 parser.add_argument("--shadow_th", help="threshold for shadow prediction value", default= "30")
@@ -58,8 +58,9 @@ parser.add_argument("--disturbance_mask_name", help="name of the forest mask ras
 
 parser.add_argument("--tree_class_list", help="labels of the tree species/classes in the correct order", default = '[1,2,3,4,5,6,7,8,9,10,11,12,13,14]')
 parser.add_argument("--tree_labels", help="labels of the tree species/classes in the correct order", default = "['Fichte','Kiefer','Tanne','Douglasie','Larche','Buche','Eiche','Ahorn','Birke','Erle','Pappel','OtherDT', 'Ground', 'Shadow']")
-parser.add_argument("--num_models", help="number of models you want to create", default= 5)
-parser.add_argument("--year", help="number of models you want to create", default= '2021')
+parser.add_argument("--num_models", help="number of models you want to create", default= 10)
+parser.add_argument("--year", help="number of models you want to create", default= '2022')
+parser.add_argument("--tile", help="The tile to be normalize", default= 'X0057_Y0057')
 args = parser.parse_args()
 
 
@@ -155,20 +156,23 @@ def normalize_bands(tile):
         dest.write(normalized_raster)
 
 if __name__ == "__main__":
-    t1_start = process_time() 
-    tiles = []
-    for dir in os.listdir(os.path.join(args.working_directory, '4_prediction')):
-        if dir.startswith('X0'):
-            tiles.append(dir)
+    #t1_start = process_time() 
+    #tiles_to_normailze = []
+    #for dir in os.listdir(os.path.join(args.working_directory, '4_prediction')):
+    #    if dir.startswith('X0'):
+    #        tiles_to_normailze.append(dir)
 
     if not os.path.exists(os.path.join(args.working_directory, '5_prediction_normalized') ):
         os.makedirs(os.path.join(args.working_directory, '5_prediction_normalized')  )
-    tiles_normalized =[]
-    for folder in os.listdir(os.path.join(args.working_directory, '5_prediction_normalized') ):
-        if str(folder).startswith('X00') and os.path.isfile(os.path.join(args.working_directory, '5_prediction_normalized', folder, '2_tree_fraction_norm_clip.tif')):
-            tiles_normalized.append(str(folder))
 
-    tiles = list(set(tiles) - set(tiles_normalized))
+    #tiles_normalized =[]
+    #for folder in os.listdir(os.path.join(args.working_directory, '5_prediction_normalized') ):
+    #    if str(folder).startswith('X00') and os.path.isfile(os.path.join(args.working_directory, '5_prediction_normalized', folder, '2_tree_fraction_norm_clip.tif')):
+    #        tiles_normalized.append(str(folder))
 
-    Parallel(n_jobs=20)(delayed(normalize_bands)(tile) for tile in tiles)
-    print('Done')
+    #tiles = list(set(tiles_to_normailze) - set(tiles_normalized))
+    #tiles = list(set(tiles_to_normailze))
+    normalize_bands(args.tile)
+
+    #Parallel(n_jobs=20)(delayed(normalize_bands)(tile) for tile in tiles)
+    #print('Done')

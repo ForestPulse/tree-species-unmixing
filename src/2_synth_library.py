@@ -7,13 +7,13 @@ import ast
 import pandas as pd
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--working_directory", help="path to the pure data numpy array", default= "/data/ahsoka/eocp/forestpulse/01_data/02_processed_data/Synth_Mix/2021_ThermalTime_2nd_sampling3")
-parser.add_argument("--year", help="year of synthetic mixture", default= 2021)
-parser.add_argument("--num_libs", help="number of synthtic libraries to create", default= 5)
+parser.add_argument("--working_directory", help="path to the pure data numpy array", default= "/data/ahsoka/eocp/forestpulse/01_data/02_processed_data/Synth_Mix/2022")
+parser.add_argument("--year", help="year of synthetic mixture", default= 2022)
+parser.add_argument("--num_libs", help="number of synthtic libraries to create", default= 1)
 parser.add_argument("--lib_size", help="number of synthtic libraries to create", default= 256000)
 #parser.add_argument("--tree_labels", help="labels of the tree species/classes in the correct order", default = ['Fichte','Kiefer','Tanne','Douglasie','Larche','Buche','Eiche','Ahorn','Birke','Erle','Pappel','Weide', 'Ground', 'Shadow'])
 parser.add_argument("--tree_index", help="labels of the tree species/classes in the correct order", default = '[1,2,3,4,5,6,7,8,9,10,11,12,13,14]')
-parser.add_argument("--tree_class_weights", help="labels of the tree species/classes in the correct order", default = '[1,1,0.25,1,1, 1,1,1,1,1, 1,1,1,1]')
+parser.add_argument("--tree_class_weights", help="labels of the tree species/classes in the correct order", default = '[1,1,1,1,1, 1,1,1,1,1, 1,1,1,1]')
 parser.add_argument("--mixture_list", help="list of mixing complexity - how many classes can be mixed in one mixture", default = '[1,2,3]' )
 parser.add_argument("--mixture_weights", help="wheight for every mixing complexity - For example [1, 1, 5, 1] will increase more chances to have 3-class mixtures", default = '[1, 5, 5]' )
 args = parser.parse_args()
@@ -40,8 +40,12 @@ def mixing(year,model_number):
 
     # check about nodata values / negative values
     mask = np.any(x_pure < 0, axis=(1, 2))
+    print(y_pure[0][mask])
     x_pure = x_pure[~mask]
     y_pure = y_pure[0][~mask]
+
+    indices_with_negatives = np.where(mask)[0]
+    print("Positionen mit negativen Werten:", indices_with_negatives)
 
     training_sample = int(args.lib_size)
     x_mixed = []
@@ -87,8 +91,8 @@ def mixing(year,model_number):
     x_mixed_out_path = os.path.join(args.working_directory, '2_mixed_data','version' +str(model_number), 'x_mixed_' + str(year) + '.npy')
     y_mixed_out_path = os.path.join(args.working_directory, '2_mixed_data','version' +str(model_number), 'y_mixed_' + str(year) + '.npy')
     print(x_mixed_out_path)
-    np.save(x_mixed_out_path, arr=x_mixed)
-    np.save(y_mixed_out_path, arr=y_mixed)
+    #np.save(x_mixed_out_path, arr=x_mixed)
+    #np.save(y_mixed_out_path, arr=y_mixed)
 
 if __name__ == '__main__':
     for i in range(int(args.num_libs)):
