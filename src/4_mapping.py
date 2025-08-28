@@ -38,11 +38,13 @@ from joblib import Parallel, parallel_backend, delayed
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--dc_folder", help="path to the spline data-cube", default= "/data/ahsoka/eocp/forestpulse/01_data/02_processed_data/ThermalTime_Spline" )
-parser.add_argument("--working_directory", help="path to the pure data numpy array", default= "/data/ahsoka/eocp/forestpulse/01_data/02_processed_data/Synth_Mix/2021_ThermalTime_2nd_sampling3")
+#parser.add_argument("--dc_folder", help="path to the spline data-cube", default= "/data/ahsoka/eocp/forestpulse/01_data/02_processed_data/Spline_Interpolation" )
+parser.add_argument("--working_directory", help="path to the pure data numpy array", default= "/data/ahsoka/eocp/forestpulse/01_data/02_processed_data/Synth_Mix/2022")
 parser.add_argument("--tree_class_list", help="labels of the tree species/classes in the correct order", default = '[1,2,3,4,5,6,7,8,9,10,11,12,13,14]')
 parser.add_argument("--tree_labels", help="labels of the tree species/classes in the correct order", default = "['Fichte','Kiefer','Tanne','Douglasie','Larche','Buche','Eiche','Ahorn','Birke','Erle','Pappel','OtherDT', 'Ground', 'Shadow']")
-parser.add_argument("--num_models", help="number of models you want to create", default= '5')
-parser.add_argument("--year", help="number of models you want to create", default= '2021')
+parser.add_argument("--num_models", help="number of models you want to create", default= '10')
+parser.add_argument("--year", help="number of models you want to create", default= '2022')
+parser.add_argument("--tile", help="The tile to be predicted", default= 'X0057_Y0057')
 args = parser.parse_args()
 
 @register_keras_serializable(package="Custom")
@@ -55,10 +57,11 @@ def get_stack(tile, year):
         # get all paths for every date
         band_paths =[]
         for datei in os.listdir(os.path.join(args.dc_folder,tile)):
-            if ('_'+band_name+'_' in datei) and datei.endswith('.tif'):
+            if (str(int(year)-2)+'-'+year in datei) and ('_'+band_name+'_' in datei) and datei.endswith('.tif'):
                 path = os.path.join(args.dc_folder,tile, datei)
                 band_paths.append(path)   
         band_paths = sorted(band_paths)
+        #print(band_paths)
         # load all dates for the called band
         list_of_dates = []
         for band_date in band_paths:
@@ -82,78 +85,31 @@ def predict(tile, year, no_of_tile, length):
     class SumToOneLayer(tf.keras.layers.Layer):
         def call(self, inputs):
             return inputs / tf.reduce_sum(inputs, axis=-1, keepdims=True)
-        
-    def pred(model, x):
-        y_pred = model(x, training=False)
-        return y_pred.numpy()
+    
     def norm(a):
         a_out = a/10000.
         return a_out
-    def toRasterFraction(arr_in, name_list):
-        y1 = int(args.year)-2
-        y2 = int(args.year)
-        path = os.path.join(args.dc_folder, tile, '{y1}-{y2}_001-365_HL_UDF_SEN2L_RSP_BLU_010.tif'.format(y1=y1, y2=y2))
-        ds = gdal.Open(path)
-        band = ds.GetRasterBand(1)
-        arr = band.ReadAsArray()
-        [cols, rows] = arr.shape
-        bands = arr_in.shape[-1]
-        driver = gdal.GetDriverByName("GTiff")
-        path_out = path = os.path.join(args.working_directory, '4_prediction', tile, 'fraction_' + year + '.tif')
-        print(path_out)
-        outdata = driver.Create(path_out, rows, cols, bands, gdal.GDT_Byte)
-        #outdata = driver.Create(path_out, rows, cols, bands, gdal.GDT_Float32)
-        outdata.SetGeoTransform(ds.GetGeoTransform())##sets same geotransform as input
-        outdata.SetProjection(ds.GetProjection())##sets same projection as input
-        for i in range(bands):
-            outdata.GetRasterBand(i + 1).WriteArray(arr_in[..., i])
-            outdata.GetRasterBand(i + 1).SetNoDataValue(255)
-            outdata.GetRasterBand(i + 1).SetDescription(name_list[i])
-        outdata.FlushCache() ##saves to disk!!
-        outdata = None
-        band=None
-        ds=None
-
-    def toRasterDeviation(arr_in, name_list):
-        y1 = int(args.year)-2
-        y2 = int(args.year)
-        path = os.path.join(args.dc_folder, tile, '{y1}-{y2}_001-365_HL_UDF_SEN2L_RSP_BLU_010.tif'.format(y1=y1, y2=y2))
-        ds = gdal.Open(path)
-        band = ds.GetRasterBand(1)
-        arr = band.ReadAsArray()
-        [cols, rows] = arr.shape
-        bands = arr_in.shape[-1]
-        driver = gdal.GetDriverByName("GTiff")
-        path_out = path = os.path.join(args.working_directory, '4_prediction', tile, 'deviation_' + year + '.tif')
-        print(path_out)
-        outdata = driver.Create(path_out, rows, cols, bands, gdal.GDT_Float32)
-        outdata.SetGeoTransform(ds.GetGeoTransform())##sets same geotransform as input
-        outdata.SetProjection(ds.GetProjection())##sets same projection as input
-        for i in range(bands):
-            outdata.GetRasterBand(i + 1).WriteArray(arr_in[..., i])
-            outdata.GetRasterBand(i + 1).SetNoDataValue(255)
-            outdata.GetRasterBand(i + 1).SetDescription(name_list[i])
-        outdata.FlushCache() ##saves to disk!!
-        outdata = None
-        band=None
-        ds=None
-
-    def toRasterClassification(arr_in):
-        y1 = int(args.year)-2
-        y2 = int(args.year)
-        path = os.path.join(args.dc_folder, tile, '{y1}-{y2}_001-365_HL_UDF_SEN2L_RSP_BLU_010.tif'.format(y1=y1, y2=y2))
-        ds = gdal.Open(path)
+    
+    def write_file(arr_in, name, data_type, num_bands):
+        # get output raster information
+        ds = gdal.Open(os.path.join(args.dc_folder, tile, '{y1}-{y2}_001-365_HL_UDF_SEN2L_RSP_BLU_010.tif'.format(y1=int(args.year)-2, y2=int(args.year))))
         band = ds.GetRasterBand(1)
         arr = band.ReadAsArray()
         [cols, rows] = arr.shape
         driver = gdal.GetDriverByName("GTiff")
-        path_out = os.path.join(args.working_directory, '4_prediction', tile, 'classification_' + year + '.tif')
-        outdata = driver.Create(path_out, rows, cols, 1, gdal.GDT_Byte)
-        outdata.SetGeoTransform(ds.GetGeoTransform())##sets same geotransform as input
-        outdata.SetProjection(ds.GetProjection())##sets same projection as input
-        outdata.GetRasterBand(1).WriteArray(arr_in)
-        outdata.GetRasterBand(1).SetNoDataValue(255)
-        outdata.FlushCache() ##saves to disk!!
+        outdata = driver.Create(os.path.join(args.working_directory, '4_prediction', tile, name+'_'+year+'.tif'), rows, cols, num_bands, data_type)
+        outdata.SetGeoTransform(ds.GetGeoTransform())
+        outdata.SetProjection(ds.GetProjection())
+        if num_bands == 1:
+            outdata.GetRasterBand(1).WriteArray(arr_in)
+            outdata.GetRasterBand(1).SetNoDataValue(255)
+        else:
+            name_list = ast.literal_eval(args.tree_labels)
+            for i in range(num_bands):
+                outdata.GetRasterBand(i + 1).WriteArray(arr_in[..., i])
+                outdata.GetRasterBand(i + 1).SetNoDataValue(255)
+                outdata.GetRasterBand(i + 1).SetDescription(name_list[i])
+        outdata.FlushCache() #saves to disk
         outdata = None
         band=None
         ds=None
@@ -197,7 +153,9 @@ def predict(tile, year, no_of_tile, length):
     y1 = int(args.year)-2
     y2 = int(args.year)
     blue_band = os.path.join(args.dc_folder, tile, '{y1}-{y2}_001-365_HL_UDF_SEN2L_RSP_BLU_010.tif'.format(y1=y1, y2=y2) )
+    #blue_band = os.path.join(args.dc_folder, tile, '{y1}-{y2}_001-365_HL_UDF_SEN2L_RSP_BLU_20210301.tif'.format(y1=y1, y2=y2) )
     if not os.path.isfile(blue_band):
+        print(blue_band)
         print('Not tile, skipping!')
         return
     out_dir = os.path.join(args.working_directory, '4_prediction', tile)
@@ -211,7 +169,9 @@ def predict(tile, year, no_of_tile, length):
     x_in = get_stack(tile, year)
     nodata_mask = x_in[:, :, 0, 0] == -9999
     x_in = norm(x_in.astype(np.float32))
-   
+    
+    print(tile,': ' , x_in.shape)
+
     y_out = np.zeros([x_in.shape[0], x_in.shape[1], len(ast.literal_eval(args.tree_class_list))]) 
     name_list = ast.literal_eval(args.tree_labels)
 
@@ -249,45 +209,45 @@ def predict(tile, year, no_of_tile, length):
     # ===============
     # writing outputs 
     # ===============
-    # median
+    # ------- median -------
     median_array[nodata_mask] = 255
     median_array = median_array.astype(np.int8)   
-    toRasterFraction(median_array, name_list)
-    # deviation
+    #toRasterFraction(median_array, name_list)
+    write_file(median_array, name = 'fraction', data_type = gdal.GDT_Byte, num_bands = median_array.shape[-1])
+    # --- classification ---
+    #toRasterClassification(y_out_clf)
+    write_file(y_out_clf, name = 'classification', data_type = gdal.GDT_Byte, num_bands = 1)
+    # ------ deviation ------
     #deviation[nodata_mask] = 255
     #deviation = deviation.astype(np.int8)
     #toRasterDeviation(deviation, name_list)
+    #write_file(deviation, name = 'deviation', data_type = gdal.GDT_Float32, num_bands = median_array.shape[-1])
     
-    toRasterClassification(y_out_clf)
+
     print('-------- Predicting ' + tile + ' done successfully  | ' + str(no_of_tile+1) + '/{number} | Duration: '.format(number=length) + str(datetime.now()-start) + ' ----------')
 
 if __name__ == '__main__':
     if not os.path.exists(os.path.join(args.working_directory, '4_prediction')):
         os.makedirs(os.path.join(args.working_directory, '4_prediction'))
 
-    list_tiles = []
-    for folder in os.listdir(args.dc_folder):
-        if str(folder).startswith('X00'):
-            list_tiles.append(str(folder))
-    
-    #with open("/data/ahsoka/eocp/forestpulse/02_scripts/spline/fed_states_tiles/BW_tiles_allY.txt", "r") as f:
-    #    list_tiles = f.read().strip().splitlines()
-    #if list_tiles[0].isdigit():
-    #    list_tiles = list_tiles[1:]
-    #list_tiles = ['X0057_Y0057','X0058_Y0057',
-    #              'X0057_Y0058','X0058_Y0058',
-    #              'X0057_Y0059','X0058_Y0059']
-    list_predicted =[]
+    #list_tiles = []
+    #for folder in os.listdir(args.dc_folder):
+    #    if str(folder).startswith('X00'):
+    #        list_tiles.append(str(folder))
 
-    for folder in os.listdir(os.path.join(args.working_directory, '4_prediction')):
-        if (str(folder).startswith('X00')) & (os.path.isfile(os.path.join(args.working_directory, '4_prediction' ,folder, 'fraction_' + str(args.year) + '.tif'))):
-            list_predicted.append(str(folder))
+    #list_predicted =[]
+    #for folder in os.listdir(os.path.join(args.working_directory, '4_prediction')):
+    #    if (str(folder).startswith('X00')) & (os.path.isfile(os.path.join(args.working_directory, '4_prediction' ,folder, 'fraction_' + str(args.year) + '.tif'))):
+    #        list_predicted.append(str(folder))
     
-    list_tiles = list(set(list_tiles) - set(list_predicted))
-    
-    print(list_tiles)
+    #list_tiles = list(set(list_tiles) - set(list_predicted))
+    #list_tiles = ['X0056_Y0057','X0057_Y0057', 'X0058_Y0057', 'X0059_Y0057', 'X0060_Y0057',
+    #              'X0056_Y0058', 'X0057_Y0058', 'X0058_Y0058', 'X0059_Y0058', 'X0060_Y0058',
+    #              'X0056_Y0059', 'X0057_Y0059', 'X0058_Y0059', 'X0059_Y0059', 'X0060_Y0059',
+    #              'X0056_Y0060', 'X0057_Y0060', 'X0058_Y0060', 'X0059_Y0060', 'X0060_Y0060',
+    #              'X0056_Y0061', 'X0057_Y0061', 'X0058_Y0061', 'X0059_Y0061', 'X0060_Y0061']
+    #print(list_tiles)
     year = int(args.year)
-    #for tile in list_tiles:
-    #    predict(tile, '2021', model_list, list_tiles.index(tile), len(list_tiles))
-    Parallel(n_jobs=10, backend="loky")(delayed(predict)(
-        tile, '2021', list_tiles.index(tile), len(list_tiles)) for tile in list_tiles)
+    predict(args.tile , args.year , 0, 1)
+    #Parallel(n_jobs=10, backend="loky")(delayed(predict)(
+    #    tile, args.year , list_tiles.index(tile), len(list_tiles)) for tile in list_tiles)

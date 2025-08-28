@@ -35,9 +35,10 @@ import argparse
 import ast
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--working_directory", help="path to the pure data numpy array", default= "/data/ahsoka/eocp/forestpulse/01_data/02_processed_data/Synth_Mix/2021_ThermalTime_2nd_sampling2")
+parser.add_argument("--working_directory", help="path to the pure data numpy array", default= "/data/ahsoka/eocp/forestpulse/01_data/02_processed_data/Synth_Mix/2022")
+#parser.add_argument("--working_directory", help="path to the pure data numpy array", default= "/data/ahsoka/eocp/forestpulse/01_data/02_processed_data/Synth_Mix/2021_ThermalTime_2nd_sampling2")
 parser.add_argument("--tree_labels", help="labels of the tree species/classes in the correct order", default = "['Fichte','Kiefer','Tanne','Douglasie','Larche','Buche','Eiche','Ahorn','Birke','Erle','Pappel','OtherDT', 'Ground', 'Shadow']")
-
+parser.add_argument("--tile", help="The tile to be color", default= 'X0057_Y0057')
 args = parser.parse_args()
 
 def hsv_to_rgb(h, s, v):
@@ -150,12 +151,13 @@ def color_raster(working_dir, tile, no_of_tile, length_list):
 
 if __name__ == '__main__':
     working_dir = os.path.join(args.working_directory, '5_prediction_normalized')
-    list_tile = os.listdir(os.path.join(args.working_directory, '5_prediction_normalized') )
+    #list_tile = os.listdir(os.path.join(args.working_directory, '5_prediction_normalized') )
 
-    tiles_to_color =[]
-    for folder in os.listdir(os.path.join(args.working_directory, '5_prediction_normalized') ):
-        if (str(folder).startswith('X00')) and not (os.path.isfile(os.path.join(args.working_directory, '5_prediction_normalized',folder,'2_tree_fraction_colored.tif'))) and (os.path.isfile(os.path.join(args.working_directory, '5_prediction_normalized',folder,'2_tree_fraction_norm_clip.tif'))):
-            tiles_to_color.append(str(folder))
-    list_tile = tiles_to_color
-
-    Parallel(n_jobs=25)(delayed(color_raster)(working_dir, tile, list_tile.index(tile),len(list_tile)) for tile in list_tile)
+    #tiles_to_color =[]
+    #for folder in os.listdir(os.path.join(args.working_directory, '5_prediction_normalized') ):
+    #    if (str(folder).startswith('X00')) and not (os.path.isfile(os.path.join(args.working_directory, '5_prediction_normalized',folder,'2_tree_fraction_colored.tif'))) and (os.path.isfile(os.path.join(args.working_directory, '5_prediction_normalized',folder,'2_tree_fraction_norm_clip.tif'))):
+    #        tiles_to_color.append(str(folder))
+    #list_tile = tiles_to_color
+    #tiles = ['X0057_Y0057','X0057_Y0058']
+    color_raster(working_dir, args.tile, 0, 1)
+    #Parallel(n_jobs=25)(delayed(color_raster)(working_dir, tile, list_tile.index(tile),len(list_tile)) for tile in list_tile)
